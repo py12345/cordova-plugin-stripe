@@ -101,8 +101,8 @@ public class CordovaStripe extends CordovaPlugin {
                 initGooglePay(callbackContext);
                 break;
 
-            case "createGooglePayToken":
-                createGooglePayToken(data.getString(0), data.getString(2), callbackContext);
+            case "getGooglePayToken":
+                getGooglePayToken(data.getString(0), data.getString(1), callbackContext);
                 break;
 
             case "createPiiToken":
@@ -474,7 +474,7 @@ public class CordovaStripe extends CordovaPlugin {
                 });
     }
 
-    private void createGooglePayToken(String totalPrice, String currencyCode, final CallbackContext callbackContext) {
+    private void getGooglePayToken(String totalPrice, String currencyCode, final CallbackContext callbackContext) {
         PaymentDataRequest.Builder request = PaymentDataRequest.newBuilder()
                 .setTransactionInfo(
                         TransactionInfo.newBuilder()
@@ -502,14 +502,13 @@ public class CordovaStripe extends CordovaPlugin {
         final PaymentDataRequest finalRequest = request.build();
 
         if (finalRequest != null) {
-            cordova.getActivity().runOnUiThread(() -> {
-                AutoResolveHelper.resolveTask(
-                        paymentsClient.loadPaymentData(finalRequest),
-                        cordova.getActivity(),
-                        LOAD_PAYMENT_DATA_REQUEST_CODE
-                );
-                googlePayCallbackContext = callbackContext;
-            });
+            googlePayCallbackContext = callbackContext;
+            cordova.setActivityResultCallback(this);
+            AutoResolveHelper.resolveTask(
+                    paymentsClient.loadPaymentData(finalRequest),
+                    cordova.getActivity(),
+                    LOAD_PAYMENT_DATA_REQUEST_CODE
+            );
         } else {
             callbackContext.error("Unable to pay with GooglePay");
         }
