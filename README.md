@@ -64,6 +64,40 @@ var bankAccount = {
 cordova.plugins.stripe.createBankAccountToken(bankAccount, onSuccess, onError);
 ```
 
+For GooglePay
+
+```javascript
+cordova.plugin.stripe.initGooglePay(succes => { 
+  console.log('Google Pay ok')
+  // show your google pay button
+}, error => { 
+  console.log("GooglePay not available")
+  // don't show your google pay button
+})
+```
+
+On GooglePay button click
+```javascript
+payWithGooglePay() {
+  let GooglePayOptions = {
+    amount: '1',
+    currencyCode: 'eur'
+  }
+  cordova.plugins.stripe.getGooglePayToken(GooglePayOptions, info => {
+    console.log('google pay info')
+    /* info: {
+      card: {},
+      created: Date,
+      id: 'tok_...',
+      type: 'card'
+    }
+    */
+  }, error => {
+    console.log("GooglePay error")
+  })
+}
+```
+
 Once you have the token, you can now send it to your backend so you can charge the customer later on.
 
 <br>
