@@ -100,6 +100,26 @@ payWithGooglePay() {
 
 Once you have the token, you can now send it to your backend so you can charge the customer later on.
 
+For payment intent, get the client_secret form your server and then
+```javascript
+stripe.confirmCardPayment(
+  client_secret, this.card, result => {
+  console.log('payment ok')
+}, error => {
+  console.log('error with setup intent')
+})
+```
+or
+```javascript
+stripe.confirmCardSetup(
+  client_secret, this.card, result => {
+  console.log('payment ok')
+}, error => {
+  console.log('error with setup intent')
+})
+```
+If 3D secure authentication is require, the page will be shown automaticaly
+
 <br>
 <br>
 
