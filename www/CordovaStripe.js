@@ -151,6 +151,16 @@ var CordovaStripe;
             if (error === void 0) { error = NOOP; }
             cordova_1.exec(success, error, 'CordovaStripe', 'createAccountToken', [accountParams]);
         };
+        Plugin.confirmCardPayment = function (secretClient, creditCard, success, error) {
+            if (success === void 0) { success = NOOP; }
+            if (error === void 0) { error = NOOP; }
+            cordova_1.exec(success, error, 'CordovaStripe', 'confirmCardPayment', [secretClient, creditCard]);
+        };
+        Plugin.confirmCardSetup = function (secretClient, creditCard, success, error) {
+            if (success === void 0) { success = NOOP; }
+            if (error === void 0) { error = NOOP; }
+            cordova_1.exec(success, error, 'CordovaStripe', 'confirmCardSetup', [secretClient, creditCard]);
+        };
         return Plugin;
     }());
     CordovaStripe.Plugin = Plugin;

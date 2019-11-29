@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import android.support.annotation.NonNull;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Status;
@@ -20,15 +19,21 @@ import com.google.android.gms.wallet.TransactionInfo;
 import com.google.android.gms.wallet.Wallet;
 import com.google.android.gms.wallet.WalletConstants;
 import com.stripe.android.CardUtils;
-import com.stripe.android.SourceCallback;
 import com.stripe.android.Stripe;
-import com.stripe.android.TokenCallback;
 import com.stripe.android.model.AccountParams;
 import com.stripe.android.model.BankAccount;
 import com.stripe.android.model.Card;
 import com.stripe.android.model.Source;
 import com.stripe.android.model.SourceParams;
 import com.stripe.android.model.Token;
+import com.stripe.android.model.ConfirmPaymentIntentParams;
+import com.stripe.android.model.ConfirmSetupIntentParams;
+import com.stripe.android.model.PaymentMethodCreateParams;
+import com.stripe.android.ApiResultCallback;
+import com.stripe.android.model.PaymentIntent;
+import com.stripe.android.PaymentIntentResult;
+import com.stripe.android.model.SetupIntent;
+import com.stripe.android.SetupIntentResult;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
@@ -54,11 +59,12 @@ public class CordovaStripe extends CordovaPlugin {
     private boolean googlePayReady;
     private PaymentMethodTokenizationParameters googlePayParams;
     private final int LOAD_PAYMENT_DATA_REQUEST_CODE = 9972;
+    private final int CONFIRM_PAYMENT_REQUEST_CODE = 50000;
+    private final int CONFIRM_SETUP_REQUEST_CODE = 50001;
     private CallbackContext googlePayCallbackContext;
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
-        stripeInstance = new Stripe(webView.getContext());
     }
 
     @Override
@@ -112,6 +118,12 @@ public class CordovaStripe extends CordovaPlugin {
             case "createAccountToken":
                 createAccountToken(data.getJSONObject(0), callbackContext);
                 break;
+            case "confirmCardPayment":
+                confirmCardPayment(data.getString(0), data.getJSONObject(1), callbackContext);
+                break;
+            case "confirmCardSetup":
+                confirmCardSetup(data.getString(0), data.getJSONObject(1), callbackContext);
+                break;
 
             default:
                 return false;
@@ -141,12 +153,50 @@ public class CordovaStripe extends CordovaPlugin {
                     break;
             }
         }
+        else if (requestCode == CONFIRM_PAYMENT_REQUEST_CODE) {
+            stripeInstance.onPaymentResult(requestCode, intent, new ApiResultCallback<PaymentIntentResult>() {
+                public void onSuccess(PaymentIntentResult result) {
+                    PaymentIntent paymentIntent = result.getIntent();
+                    PaymentIntent.Status status = paymentIntent.getStatus();
+                    if (status == PaymentIntent.Status.Succeeded) {
+                        // Payment completed successfully
+                        googlePayCallbackContext.success(paymentIntent.toString());
+                    } else if (status == PaymentIntent.Status.RequiresPaymentMethod) {
+                        // Payment failed
+                        googlePayCallbackContext.error(paymentIntent.toString());
+                    }
+                }
+
+                public void onError(Exception error) {
+                    googlePayCallbackContext.error(error.toString());
+                }
+            });
+        }
+        else if (requestCode == CONFIRM_SETUP_REQUEST_CODE) {
+            stripeInstance.onSetupResult(requestCode, intent, new ApiResultCallback<SetupIntentResult>() {
+                public void onSuccess(SetupIntentResult result) {
+                    SetupIntent setupIntent = result.getIntent();
+                    SetupIntent.Status status = setupIntent.getStatus();
+                    if (status == SetupIntent.Status.Succeeded) {
+                        // Payment completed successfully
+                        googlePayCallbackContext.success(setupIntent.toString());
+                    } else if (status == SetupIntent.Status.RequiresPaymentMethod) {
+                        // Payment failed
+                        googlePayCallbackContext.error(setupIntent.toString());
+                    }
+                }
+
+                public void onError(Exception error) {
+                    googlePayCallbackContext.error(error.toString());
+                }
+            });
+        }
     }
 
     private void setPublishableKey(final String key, final CallbackContext callbackContext) {
 
         try {
-            stripeInstance.setDefaultPublishableKey(key);
+            stripeInstance = new Stripe(webView.getContext(), key);
             publishableKey = key;
             callbackContext.success();
         } catch (Exception e) {
@@ -158,24 +208,55 @@ public class CordovaStripe extends CordovaPlugin {
     private void createCardToken(final JSONObject creditCard, final CallbackContext callbackContext) {
 
         try {
-            Card cardObject = new Card(
-                    creditCard.getString("number"),
-                    creditCard.getInt("expMonth"),
+            // Card cardObject = new Card(
+            //         creditCard.getString("number"),
+            //         creditCard.getInt("expMonth"),
+            //         creditCard.getInt("expYear"),
+            //         creditCard.getString("cvc"),
+            //         creditCard.has("name") ? creditCard.getString("name") : null,
+            //         creditCard.has("address_line1") ? creditCard.getString("address_line1") : null,
+            //         creditCard.has("address_line2") ? creditCard.getString("address_line2") : null,
+            //         creditCard.has("address_city") ? creditCard.getString("address_city") : null,
+            //         creditCard.has("address_state") ? creditCard.getString("address_state") : null,
+            //         creditCard.has("postalCode") ? creditCard.getString("postalCode") : null,
+            //         creditCard.has("address_country") ? creditCard.getString("address_country") : null,
+            //         creditCard.has("currency") ? creditCard.getString("currency") : null
+            // );
+            // Card cardObject = Card.copy(creditCard.getString("number"),
+            //         creditCard.getString("cvc"),
+            //         creditCard.getInt("expMonth"), 
+            //         creditCard.getInt("expYear"), 
+            //         creditCard.has("name") ? creditCard.getString("name") : null, 
+            //         creditCard.has("address_line1") ? creditCard.getString("address_line1") : null, 
+            //         creditCard.has("addressLine1Check") ? creditCard.getString("addressLine1Check") : null, 
+            //         creditCard.has("address_line2") ? creditCard.getString("address_line2") : null, 
+            //         creditCard.has("address_city") ? creditCard.getString("address_city") : null, 
+            //         creditCard.has("address_state") ? creditCard.getString("address_state") : null, 
+            //         creditCard.has("addressZip") ? creditCard.getString("addressZip") : null, 
+            //         creditCard.has("addressZipCheck") ? creditCard.getString("addressZipCheck") : null, 
+            //         creditCard.has("address_country") ? creditCard.getString("address_country") : null, 
+            //         creditCard.has("last4") ? creditCard.getString("last4") : null, 
+            //         creditCard.has("brand") ? creditCard.getString("brand") : null, 
+            //         creditCard.has("funding") ? creditCard.getString("funding") : null, 
+            //         creditCard.has("fingerprint") ? creditCard.getString("fingerprint") : null, 
+            //         creditCard.has("country") ? creditCard.getString("country") : null, 
+            //         creditCard.has("currency") ? creditCard.getString("currency") : null, 
+            //         creditCard.has("customerId") ? creditCard.getString("customerId") : null, 
+            //         creditCard.has("cvcCheck") ? creditCard.getString("cvcCheck") : null, 
+            //         creditCard.has("id") ? creditCard.getString("id") : null, 
+            //         null, 
+            //         creditCard.has("tokenizationMethod") ? creditCard.getString("tokenizationMethod") : null, 
+            //         null
+            // );
+            Card cardObject = Card.create(creditCard.getString("number"),
+                    creditCard.getInt("expMonth"), 
                     creditCard.getInt("expYear"),
-                    creditCard.getString("cvc"),
-                    creditCard.has("name") ? creditCard.getString("name") : null,
-                    creditCard.has("address_line1") ? creditCard.getString("address_line1") : null,
-                    creditCard.has("address_line2") ? creditCard.getString("address_line2") : null,
-                    creditCard.has("address_city") ? creditCard.getString("address_city") : null,
-                    creditCard.has("address_state") ? creditCard.getString("address_state") : null,
-                    creditCard.has("postalCode") ? creditCard.getString("postalCode") : null,
-                    creditCard.has("address_country") ? creditCard.getString("address_country") : null,
-                    creditCard.has("currency") ? creditCard.getString("currency") : null
+                    creditCard.getString("cvc")
             );
 
             stripeInstance.createToken(
                     cardObject,
-                    new TokenCallback() {
+                    new ApiResultCallback<Token>() {
                         public void onSuccess(Token token) {
                             callbackContext.success(getCardObjectFromToken(token));
                         }
@@ -186,7 +267,7 @@ public class CordovaStripe extends CordovaPlugin {
                     }
             );
 
-        } catch (JSONException e) {
+        } catch (Exception e) {
             callbackContext.error(e.getLocalizedMessage());
         }
 
@@ -203,20 +284,20 @@ public class CordovaStripe extends CordovaPlugin {
                     bankAccount.getString("routing_number")
             );
 
-            if (bankAccount.getString("account_holder_name") != null) {
-                bankAccountObject.setAccountHolderName(bankAccount.getString("account_holder_name"));
-            }
+            // if (bankAccount.getString("account_holder_name") != null) {
+            //     bankAccountObject.setAccountHolderName(bankAccount.getString("account_holder_name"));
+            // }
 
-            String accountHolderType = bankAccount.getString("account_holder_type");
-            if (accountHolderType.equals("individual")) {
-                bankAccountObject.setAccountHolderType(BankAccount.TYPE_INDIVIDUAL);
-            } else if (accountHolderType.equals("company")) {
-                bankAccountObject.setAccountHolderType(BankAccount.TYPE_COMPANY);
-            }
+            // String accountHolderType = bankAccount.getString("account_holder_type");
+            // if (accountHolderType.equals("individual")) {
+            //     bankAccountObject.setAccountHolderType(BankAccount.TYPE_INDIVIDUAL);
+            // } else if (accountHolderType.equals("company")) {
+            //     bankAccountObject.setAccountHolderType(BankAccount.TYPE_COMPANY);
+            // }
 
             stripeInstance.createBankAccountToken(
                     bankAccountObject,
-                    new TokenCallback() {
+                    new ApiResultCallback<Token>() {
                         public void onSuccess(Token token) {
                             callbackContext.success(getBankObjectFromToken(token));
                         }
@@ -242,7 +323,7 @@ public class CordovaStripe extends CordovaPlugin {
     }
 
     private void validateExpiryDate(final Integer expMonth, final Integer expYear, final CallbackContext callbackContext) {
-        Card card = new Card(null, expMonth, expYear, null);
+        Card card = Card.create(null, expMonth, expYear, null);
         if (card.validateExpiryDate()) {
             callbackContext.success();
         } else {
@@ -251,7 +332,7 @@ public class CordovaStripe extends CordovaPlugin {
     }
 
     private void validateCVC(final String cvc, final CallbackContext callbackContext) {
-        Card card = new Card(null, null, null, cvc);
+        Card card = Card.create(null, null, null, cvc);
         if (card.validateCVC()) {
             callbackContext.success();
         } else {
@@ -260,7 +341,7 @@ public class CordovaStripe extends CordovaPlugin {
     }
 
     private void getCardType(final String cardNumber, final CallbackContext callbackContext) {
-        Card card = new Card(cardNumber, null, null, null);
+        Card card = Card.create(cardNumber, null, null, null);
         callbackContext.success(card.getBrand());
     }
 
@@ -329,7 +410,7 @@ public class CordovaStripe extends CordovaPlugin {
             return;
         }
 
-        stripeInstance.createSource(sourceParams, new SourceCallback() {
+        stripeInstance.createSource(sourceParams, new ApiResultCallback<Source>() {
             @Override
             public void onError(Exception error) {
                 callbackContext.error(error.getLocalizedMessage());
@@ -338,7 +419,7 @@ public class CordovaStripe extends CordovaPlugin {
             @Override
             public void onSuccess(Source source) {
                 try {
-                    callbackContext.success(source.toJson());
+                    callbackContext.success(source.toString());
                 } catch (Exception err) {
                     callbackContext.error(err.getLocalizedMessage());
                 }
@@ -347,7 +428,7 @@ public class CordovaStripe extends CordovaPlugin {
     }
 
     private void createPiiToken(final String personalId, final CallbackContext callbackContext) {
-        stripeInstance.createPiiToken(personalId, new TokenCallback() {
+        stripeInstance.createPiiToken(personalId, new ApiResultCallback<Token>() {
             @Override
             public void onError(Exception error) {
                 callbackContext.error(error.getLocalizedMessage());
@@ -363,9 +444,13 @@ public class CordovaStripe extends CordovaPlugin {
     private void createAccountToken(final JSONObject params, final CallbackContext callbackContext) {
         try {
             Map<String, Object> legalEntity = jsonObjectToHashMap(params.getJSONObject("legalEntity"));
+            // AccountParams.BusinessType type = legalEntity.type ? legalEntity.type : 'individual';
+            AccountParams.BusinessType type = AccountParams.BusinessType.Individual;
+                // type = AccountParams.BusinessType.Individual;
             Token token = stripeInstance.createAccountTokenSynchronous(
                     AccountParams.createAccountParams(
                             params.getBoolean("tosShownAndAccepted"),
+                            type,
                             legalEntity
                     )
             );
@@ -417,7 +502,7 @@ public class CordovaStripe extends CordovaPlugin {
             cardObject.put("address_zip", card.getAddressZip());
             cardObject.put("brand", card.getBrand());
             cardObject.put("country", card.getAddressCountry());
-            cardObject.put("cvc", card.getCVC());
+            cardObject.put("cvc", card.getCvc());
             cardObject.put("exp_month", card.getExpMonth());
             cardObject.put("exp_year", card.getExpYear());
             cardObject.put("funding", card.getFunding());
@@ -505,12 +590,53 @@ public class CordovaStripe extends CordovaPlugin {
             googlePayCallbackContext = callbackContext;
             cordova.setActivityResultCallback(this);
             AutoResolveHelper.resolveTask(
-                    paymentsClient.loadPaymentData(finalRequest),
-                    cordova.getActivity(),
-                    LOAD_PAYMENT_DATA_REQUEST_CODE
+                paymentsClient.loadPaymentData(finalRequest),
+                cordova.getActivity(),
+                LOAD_PAYMENT_DATA_REQUEST_CODE
             );
         } else {
             callbackContext.error("Unable to pay with GooglePay");
+        }
+    }
+
+    private void confirmCardPayment(final String secretClient, final JSONObject creditCard, final CallbackContext callbackContext) {
+        try {
+            Card cardObject = Card.create(creditCard.getString("number"),
+                    creditCard.getInt("expMonth"), 
+                    creditCard.getInt("expYear"),
+                    creditCard.getString("cvc")
+            );
+            PaymentMethodCreateParams params = cardObject.toPaymentMethodsParams();
+
+            if (params != null) {
+                ConfirmPaymentIntentParams confirmParams = ConfirmPaymentIntentParams
+                        .createWithPaymentMethodCreateParams(params, secretClient);
+                googlePayCallbackContext = callbackContext;
+                cordova.setActivityResultCallback(this);
+                stripeInstance.confirmPayment(cordova.getActivity(), confirmParams);
+            }            
+        } catch (Exception err) {
+            callbackContext.error(err.getLocalizedMessage());
+        }
+    }
+
+    private void confirmCardSetup(final String secretClient, final JSONObject creditCard, final CallbackContext callbackContext) {
+        try {
+            Card cardObject = Card.create(creditCard.getString("number"),
+                    creditCard.getInt("expMonth"), 
+                    creditCard.getInt("expYear"),
+                    creditCard.getString("cvc")
+            );
+            PaymentMethodCreateParams params = cardObject.toPaymentMethodsParams();
+            if (params != null) {
+                ConfirmSetupIntentParams confirmParams = ConfirmSetupIntentParams
+                        .create(params, secretClient);
+                googlePayCallbackContext = callbackContext;
+                cordova.setActivityResultCallback(this);
+                stripeInstance.confirmSetupIntent(cordova.getActivity(), confirmParams);
+            }       
+        } catch (Exception err) {
+            callbackContext.error(err.getLocalizedMessage());
         }
     }
 

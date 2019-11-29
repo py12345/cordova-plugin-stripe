@@ -381,6 +381,11 @@ export namespace CordovaStripe {
     static createAccountToken(accountParams: AccountParams, success = NOOP, error: ErrorCallback = NOOP) {
       exec(success, error, 'CordovaStripe', 'createAccountToken', [accountParams]);
     }
+    static confirmCardPayment(secretClient: string, creditCard: CardTokenRequest, success = NOOP, error: ErrorCallback = NOOP) {
+      exec(success, error, 'CordovaStripe', 'confirmCardPayment', [secretClient, creditCard]);
+    }
+    static confirmCardSetup(secretClient: string, creditCard: CardTokenRequest, success = NOOP, error: ErrorCallback = NOOP) {
+      exec(success, error, 'CordovaStripe', 'confirmCardSetup', [secretClient, creditCard]);
+    }
   }
 }
-
