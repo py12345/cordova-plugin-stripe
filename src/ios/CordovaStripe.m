@@ -1,4 +1,5 @@
 #import "CordovaStripe.h"
+//#import "Stripe.framework/Headers/Stripe.h"
 @import Stripe;
 
 @implementation CordovaStripe
@@ -85,7 +86,7 @@ NSArray *CardBrands = nil;
 
 - (void)finalizeApplePayTransaction: (CDVInvokedUrlCommand *) command
 {
-    BOOL successful = [command.arguments objectAtIndex:0];
+    BOOL successful = [[command.arguments objectAtIndex:0] boolValue];
     if (self.applePayCompleteCallback) {
         self.applePayCompleteCallback(successful? PKPaymentAuthorizationStatusSuccess : PKPaymentAuthorizationStatusFailure);
         self.applePayCompleteCallback = nil;
@@ -307,7 +308,7 @@ NSArray *CardBrands = nil;
             if (error != nil) {
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
             } else {
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:token.tokenId];
+                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:token.tokenId];
             }
             
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -323,12 +324,132 @@ NSArray *CardBrands = nil;
         if (error != nil) {
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
         } else {
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:token.tokenId];
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:token.tokenId];
         }
         
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
 
-@end
+- (void) confirmCardPayment:(CDVInvokedUrlCommand *) command
+{
+    NSString* const paymentIntentClientSecret = [[command arguments] objectAtIndex:0];
+    NSDictionary* const cardInfo = [[command arguments] objectAtIndex:1];
+    
+        
+    STPCardParams* cardParams = [[STPCardParams alloc] init];
+    
+    STPAddress* address = [[STPAddress alloc] init];
+    address.line1 = cardInfo[@"address_line1"];
+    address.line2 = cardInfo[@"address_line2"];
+    address.city = cardInfo[@"address_city"];
+    address.state = cardInfo[@"address_state"];
+    address.country = cardInfo[@"address_country"];
+    address.postalCode = cardInfo[@"postalCode"];
+    address.phone = cardInfo[@"phone"];
+    address.email = cardInfo[@"email"];
+    
+    cardParams.address = address;
+    
+    cardParams.number = cardInfo[@"number"];
+    cardParams.expMonth = [cardInfo[@"expMonth"] intValue];
+    cardParams.expYear = [cardInfo[@"expYear"] intValue];
+    cardParams.cvc = cardInfo[@"cvc"];
+    cardParams.name = cardInfo[@"name"];
+    cardParams.currency = cardInfo[@"currency"];
 
+    STPPaymentMethodCardParams *paymentMethodCardParams = [[STPPaymentMethodCardParams alloc] initWithCardSourceParams:cardParams];
+    STPPaymentMethodParams *paymentMethodParams = [STPPaymentMethodParams paramsWithCard:paymentMethodCardParams billingDetails:nil metadata:nil];
+    STPPaymentIntentParams *paymentIntentParams = [[STPPaymentIntentParams alloc] initWithClientSecret:paymentIntentClientSecret];
+    paymentIntentParams.paymentMethodParams = paymentMethodParams;
+    
+    // Submit the payment
+    STPPaymentHandler *paymentHandler = [STPPaymentHandler sharedHandler];
+    [paymentHandler confirmPayment:paymentIntentParams withAuthenticationContext:self completion:^(STPPaymentHandlerActionStatus status, STPPaymentIntent *paymentIntent, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            CDVPluginResult *pluginResult;
+            switch (status) {
+                case STPPaymentHandlerActionStatusFailed: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment failed"];
+                    break;
+                }
+                case STPPaymentHandlerActionStatusCanceled: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Payment canceled"];
+                    break;
+                }
+                case STPPaymentHandlerActionStatusSucceeded: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment succeeded"];
+                    break;
+                }
+                default:
+                    break;
+            }
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        });
+    }];
+}
+
+- (void) confirmCardSetup:(CDVInvokedUrlCommand *) command
+{
+    NSString* const paymentIntentClientSecret = [[command arguments] objectAtIndex:0];
+    NSDictionary* const cardInfo = [[command arguments] objectAtIndex:1];
+    
+        
+    STPCardParams* cardParams = [[STPCardParams alloc] init];
+    
+    STPAddress* address = [[STPAddress alloc] init];
+    address.line1 = cardInfo[@"address_line1"];
+    address.line2 = cardInfo[@"address_line2"];
+    address.city = cardInfo[@"address_city"];
+    address.state = cardInfo[@"address_state"];
+    address.country = cardInfo[@"address_country"];
+    address.postalCode = cardInfo[@"postalCode"];
+    address.phone = cardInfo[@"phone"];
+    address.email = cardInfo[@"email"];
+    
+    cardParams.address = address;
+    
+    cardParams.number = cardInfo[@"number"];
+    cardParams.expMonth = [cardInfo[@"expMonth"] intValue];
+    cardParams.expYear = [cardInfo[@"expYear"] intValue];
+    cardParams.cvc = cardInfo[@"cvc"];
+    cardParams.name = cardInfo[@"name"];
+    cardParams.currency = cardInfo[@"currency"];
+
+    STPPaymentMethodCardParams *paymentMethodCardParams = [[STPPaymentMethodCardParams alloc] initWithCardSourceParams:cardParams];
+    STPPaymentMethodParams *paymentMethodParams = [STPPaymentMethodParams paramsWithCard:paymentMethodCardParams billingDetails:nil metadata:nil];
+    STPSetupIntentConfirmParams *setupIntentConfirmParams = [[STPSetupIntentConfirmParams alloc] initWithClientSecret:paymentIntentClientSecret];
+    setupIntentConfirmParams.paymentMethodParams = paymentMethodParams;
+    
+    // Submit the payment
+    STPPaymentHandler *paymentHandler = [STPPaymentHandler sharedHandler];
+    [paymentHandler confirmSetupIntent:setupIntentConfirmParams withAuthenticationContext:self completion:^(STPPaymentHandlerActionStatus status, STPSetupIntent *setupIntent, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            CDVPluginResult *pluginResult;
+            switch (status) {
+                case STPPaymentHandlerActionStatusFailed: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment failed"];
+                    break;
+                }
+                case STPPaymentHandlerActionStatusCanceled: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Payment canceled"];
+                    break;
+                }
+                case STPPaymentHandlerActionStatusSucceeded: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment succeeded"];
+                    break;
+                }
+                default:
+                    break;
+            }
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        });
+    }];
+}
+
+# pragma mark STPAuthenticationContext
+- (UIViewController *)authenticationPresentingViewController {
+    return self.viewController;
+}
+
+@end

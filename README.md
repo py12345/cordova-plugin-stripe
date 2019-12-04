@@ -98,6 +98,42 @@ payWithGooglePay() {
 }
 ```
 
+For ApplePay
+
+```javascript
+cordova.plugin.stripe.initApplePay(succes => { 
+  console.log('Apple Pay ok')
+  // show your apple pay button
+}, error => { 
+  console.log("ApplePay not available")
+  // don't show your apple pay button
+})
+```
+
+On ApplePay button click
+```javascript
+payWithApplePay() {
+    let opt = {
+      merchantId: 'YOUR_MERCHANT_ID',
+      country: 'fr',
+      currency: 'eur',
+      items: [{
+        label: 'test',
+        amount: 1,
+      }]
+    }
+    window['cordova'].plugins.stripe.payWithApplePay(opt, (token, cb) => {
+      console.log('applePay ok')
+      console.log(token)
+      cb(true)
+      // or cb(false) if you want to discard after an api call for example
+    }, error => {
+      console.log('applePay not ok')
+      console.log(error)
+    })
+  }
+```
+
 Once you have the token, you can now send it to your backend so you can charge the customer later on.
 
 For payment intent, get the client_secret form your server and then

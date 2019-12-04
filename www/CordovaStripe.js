@@ -98,6 +98,11 @@ var CordovaStripe;
             if (error === void 0) { error = NOOP; }
             cordova_1.exec(success, error, 'CordovaStripe', 'getCardType', [String(cardNumber)]);
         };
+        Plugin.initApplePay = function (success, error) {
+            if (success === void 0) { success = NOOP; }
+            if (error === void 0) { error = NOOP; }
+            cordova_1.exec(success, error, 'CordovaStripe', 'checkApplePaySupport');
+        };
         /**
          * Pay with ApplePay
          * @param {CordovaStripe.ApplePayOptions} options

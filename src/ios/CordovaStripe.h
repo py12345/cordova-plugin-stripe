@@ -3,7 +3,7 @@
 
 typedef void(^ApplePayCallback)(PKPaymentAuthorizationStatus);
 
-@interface CordovaStripe : CDVPlugin
+@interface CordovaStripe : CDVPlugin <STPAuthenticationContext>
 @property (nonatomic, retain) STPAPIClient *client;
 @property (nonatomic, copy) ApplePayCallback applePayCompleteCallback;
 @property (nonatomic, retain) NSString *applePayCDVCallbackId;
@@ -20,5 +20,8 @@ extern NSArray *CardBrands;
 - (void) createSource: (CDVInvokedUrlCommand *) command;
 - (void) initializeApplePayTransaction:(CDVInvokedUrlCommand *) command;
 - (void) finalizeApplePayTransaction:(CDVInvokedUrlCommand *) command;
+- (void) checkApplePaySupport:(CDVInvokedUrlCommand *) command;
+- (void) confirmCardPayment:(CDVInvokedUrlCommand *) command;
+- (void) confirmCardSetup:(CDVInvokedUrlCommand *) command;
 
 @end

@@ -331,6 +331,10 @@ export namespace CordovaStripe {
       exec(success, error, 'CordovaStripe', 'getCardType', [String(cardNumber)]);
     }
 
+    static initApplePay(success = NOOP, error: ErrorCallback = NOOP) {
+      exec(success, error, 'CordovaStripe', 'checkApplePaySupport');
+    }
+
     /**
      * Pay with ApplePay
      * @param {CordovaStripe.ApplePayOptions} options
