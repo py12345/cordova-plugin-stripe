@@ -34,6 +34,7 @@ NSArray *CardBrands = nil;
 
 - (void)initializeApplePayTransaction:(CDVInvokedUrlCommand *) command
 {
+    self.hasProcessedApplePayPayment = YES;
     NSString *merchantIdentifier = [command.arguments objectAtIndex:0];
     NSString *country = [command.arguments objectAtIndex:1];
     NSString *currency = [command.arguments objectAtIndex:2];

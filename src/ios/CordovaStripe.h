@@ -7,6 +7,7 @@ typedef void(^ApplePayCallback)(PKPaymentAuthorizationStatus);
 @property (nonatomic, retain) STPAPIClient *client;
 @property (nonatomic, copy) ApplePayCallback applePayCompleteCallback;
 @property (nonatomic, retain) NSString *applePayCDVCallbackId;
+@property (nonatomic) BOOL hasProcessedApplePayPayment;
 extern NSArray *CardBrands;
 
 - (void) setPublishableKey: (CDVInvokedUrlCommand *) command;

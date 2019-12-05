@@ -146,6 +146,7 @@ public class CordovaStripe extends CordovaPlugin {
                     }
                     break;
                 case Activity.RESULT_CANCELED:
+                    googlePayCallbackContext.error("User canceled GooglePay payment.");
                     break;
                 case AutoResolveHelper.RESULT_ERROR:
                     Status status = AutoResolveHelper.getStatusFromIntent(intent);
