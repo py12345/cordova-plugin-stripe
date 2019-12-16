@@ -17,7 +17,13 @@ static NSString* const PLUGIN_NAME = @"CordovaStripe";
 }
 
 - (void)paymentAuthorizationViewControllerDidFinish:(PKPaymentAuthorizationViewController *)controller {
-    
+    CordovaStripe* pluginInstance = [self.viewController getCommandInstance:PLUGIN_NAME];
+    if (!pluginInstance.hasProcessedApplePayPayment) {
+        CDVPluginResult *result;
+        result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"User canceled ApplePay"];
+        [pluginInstance.commandDelegate sendPluginResult:result callbackId:pluginInstance.applePayCDVCallbackId];
+        pluginInstance.applePayCDVCallbackId = nil;
+    }
     [self.viewController dismissViewControllerAnimated:YES completion:nil];
 }
 

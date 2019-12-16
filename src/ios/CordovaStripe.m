@@ -34,7 +34,7 @@ NSArray *CardBrands = nil;
 
 - (void)initializeApplePayTransaction:(CDVInvokedUrlCommand *) command
 {
-    self.hasProcessedApplePayPayment = YES;
+    self.hasProcessedApplePayPayment = NO;
     NSString *merchantIdentifier = [command.arguments objectAtIndex:0];
     NSString *country = [command.arguments objectAtIndex:1];
     NSString *currency = [command.arguments objectAtIndex:2];
@@ -68,6 +68,7 @@ NSArray *CardBrands = nil;
 
 - (void)processPayment: (PKPaymentAuthorizationViewController *)controller didAuthorizePayment:(PKPayment *)payment completion:(void (^)(PKPaymentAuthorizationStatus))completion
 {
+    self.hasProcessedApplePayPayment = YES;
     [self.client createTokenWithPayment:payment completion:^(STPToken *token, NSError *error) {
         CDVPluginResult *result;
         
@@ -203,9 +204,8 @@ NSArray *CardBrands = nil;
 
 - (void)validateExpiryDate:(CDVInvokedUrlCommand *)command
 {
-    NSString *expMonth = [command.arguments objectAtIndex:0];
-    NSString *expYear = [command.arguments objectAtIndex:1];
-    
+    NSString *expMonth = [NSString stringWithFormat: @"%@", [command.arguments objectAtIndex:0]];
+    NSString *expYear = [NSString stringWithFormat: @"%@", [command.arguments objectAtIndex:1]];
     if (expYear.length == 4) {
         expYear = [expYear substringFromIndex:2];
     }
