@@ -23,6 +23,7 @@ extern NSArray *CardBrands;
 - (void) finalizeApplePayTransaction:(CDVInvokedUrlCommand *) command;
 - (void) checkApplePaySupport:(CDVInvokedUrlCommand *) command;
 - (void) confirmCardPayment:(CDVInvokedUrlCommand *) command;
+- (void) confirmCardPaymentWithToken:(CDVInvokedUrlCommand *) command;
 - (void) confirmCardSetup:(CDVInvokedUrlCommand *) command;
 
 @end

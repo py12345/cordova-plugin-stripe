@@ -371,7 +371,44 @@ NSArray *CardBrands = nil;
             CDVPluginResult *pluginResult;
             switch (status) {
                 case STPPaymentHandlerActionStatusFailed: {
-                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment failed"];
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
+                    break;
+                }
+                case STPPaymentHandlerActionStatusCanceled: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Payment canceled"];
+                    break;
+                }
+                case STPPaymentHandlerActionStatusSucceeded: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment succeeded"];
+                    break;
+                }
+                default:
+                    break;
+            }
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        });
+    }];
+}
+
+- (void) confirmCardPaymentWithToken:(CDVInvokedUrlCommand *) command
+{
+    NSString* const paymentIntentClientSecret = [[command arguments] objectAtIndex:0];
+    NSString* const token = [[command arguments] objectAtIndex:1];
+
+    STPPaymentMethodCardParams *paymentMethodCardParams = [STPPaymentMethodCardParams alloc];
+    paymentMethodCardParams.token = token;
+    STPPaymentMethodParams *paymentMethodParams = [STPPaymentMethodParams paramsWithCard:paymentMethodCardParams billingDetails:nil metadata:nil];
+    STPPaymentIntentParams *paymentIntentParams = [[STPPaymentIntentParams alloc] initWithClientSecret:paymentIntentClientSecret];
+    paymentIntentParams.paymentMethodParams = paymentMethodParams;
+    
+    // Submit the payment
+    STPPaymentHandler *paymentHandler = [STPPaymentHandler sharedHandler];
+    [paymentHandler confirmPayment:paymentIntentParams withAuthenticationContext:self completion:^(STPPaymentHandlerActionStatus status, STPPaymentIntent *paymentIntent, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            CDVPluginResult *pluginResult;
+            switch (status) {
+                case STPPaymentHandlerActionStatusFailed: {
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
                     break;
                 }
                 case STPPaymentHandlerActionStatusCanceled: {
@@ -429,7 +466,7 @@ NSArray *CardBrands = nil;
             CDVPluginResult *pluginResult;
             switch (status) {
                 case STPPaymentHandlerActionStatusFailed: {
-                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Payment failed"];
+                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
                     break;
                 }
                 case STPPaymentHandlerActionStatusCanceled: {

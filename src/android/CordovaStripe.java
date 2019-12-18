@@ -121,6 +121,9 @@ public class CordovaStripe extends CordovaPlugin {
             case "confirmCardPayment":
                 confirmCardPayment(data.getString(0), data.getJSONObject(1), callbackContext);
                 break;
+            case "confirmCardPaymentWithToken":
+                confirmCardPaymentWithToken(data.getString(0), data.getString(1), callbackContext);
+                break;
             case "confirmCardSetup":
                 confirmCardSetup(data.getString(0), data.getJSONObject(1), callbackContext);
                 break;
@@ -608,6 +611,23 @@ public class CordovaStripe extends CordovaPlugin {
                     creditCard.getString("cvc")
             );
             PaymentMethodCreateParams params = cardObject.toPaymentMethodsParams();
+
+            if (params != null) {
+                ConfirmPaymentIntentParams confirmParams = ConfirmPaymentIntentParams
+                        .createWithPaymentMethodCreateParams(params, secretClient);
+                googlePayCallbackContext = callbackContext;
+                cordova.setActivityResultCallback(this);
+                stripeInstance.confirmPayment(cordova.getActivity(), confirmParams);
+            }            
+        } catch (Exception err) {
+            callbackContext.error(err.getLocalizedMessage());
+        }
+    }
+
+    private void confirmCardPaymentWithToken(final String secretClient, final String token, final CallbackContext callbackContext) {
+        try {
+            PaymentMethodCreateParams.Card card = PaymentMethodCreateParams.Card.create(token);
+            PaymentMethodCreateParams params = PaymentMethodCreateParams.create(card);
 
             if (params != null) {
                 ConfirmPaymentIntentParams confirmParams = ConfirmPaymentIntentParams

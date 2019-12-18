@@ -161,6 +161,11 @@ var CordovaStripe;
             if (error === void 0) { error = NOOP; }
             cordova_1.exec(success, error, 'CordovaStripe', 'confirmCardPayment', [secretClient, creditCard]);
         };
+        Plugin.confirmCardPaymentWithToken = function (secretClient, token, success, error) {
+            if (success === void 0) { success = NOOP; }
+            if (error === void 0) { error = NOOP; }
+            cordova_1.exec(success, error, 'CordovaStripe', 'confirmCardPaymentWithToken', [secretClient, token]);
+        };
         Plugin.confirmCardSetup = function (secretClient, creditCard, success, error) {
             if (success === void 0) { success = NOOP; }
             if (error === void 0) { error = NOOP; }

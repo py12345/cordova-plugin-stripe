@@ -288,6 +288,7 @@ export declare namespace CordovaStripe {
         static createPiiToken(personalId: string, success?: any, error?: ErrorCallback): void;
         static createAccountToken(accountParams: AccountParams, success?: any, error?: ErrorCallback): void;
         static confirmCardPayment(secretClient: string, creditCard: CardTokenRequest, success?: any, error?: ErrorCallback): void;
+        static confirmCardPaymentWithToken(secretClient: string, token: string, success?: any, error?: ErrorCallback): void;
         static confirmCardSetup(secretClient: string, creditCard: CardTokenRequest, success?: any, error?: ErrorCallback): void;
     }
 }
