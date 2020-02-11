@@ -44,6 +44,9 @@
         <source-file src="src/ios/AppDelegate+CordovaStripe.m"/>
 
         <framework src="src/ios/Stripe.framework" custom="true" embed="true"/>
+        <hook src="embed_framework.js" type="after_platform_add" />
+        <hook src="embed_framework.js" type="after_plugin_install" />
+        <hook src="embed_framework.js" type="after_build" />
 
     </platform>
 
