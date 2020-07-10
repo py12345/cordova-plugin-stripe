@@ -6,6 +6,7 @@
     "src",
     "www",
     "plugin.xml",
+    "embed_framework.js",
     "typings/CordovaStripe.d.ts"
   ],
   "scripts": {
